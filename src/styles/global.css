@@ -84,6 +84,32 @@ select:focus-visible {
   font-size: 0.92rem;
 }
 
+.sidebar-profile-block {
+  width: 100%;
+}
+
+.sidebar-profile-image,
+.sidebar-profile-placeholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 22px;
+  border: 2px solid #d6b9a7;
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar-profile-image {
+  object-fit: cover;
+  background: #fff;
+}
+
+.sidebar-profile-placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #f7ebe1, #edd8ca);
+  color: #8b4f39;
+}
+
 .main-nav {
   display: grid;
   gap: var(--space-2);
@@ -1340,6 +1366,43 @@ select:focus-visible {
 .settings-import-preview h4,
 .settings-import-preview p {
   margin: 0;
+}
+
+.settings-profile-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.settings-profile-panel h3 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.settings-profile-preview-wrap {
+  display: grid;
+  justify-items: start;
+}
+
+.settings-profile-preview,
+.settings-profile-preview-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 22px;
+  border: 2px solid #d6b9a7;
+  box-shadow: var(--shadow-soft);
+}
+
+.settings-profile-preview {
+  object-fit: cover;
+  background: #fff;
+}
+
+.settings-profile-preview-placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #f7ebe1, #edd8ca);
+  color: #8b4f39;
 }
 
 .mobile-topbar,

@@ -10,6 +10,7 @@ const optionalSelectedMealsKey = "ebbaChallenge.selectedMeals";
 
 interface ChallengeSettingsSnapshot {
   startDate: string;
+  profileImageDataUrl: string | null;
 }
 
 interface BackupMeta {
@@ -66,7 +67,7 @@ function defaultAuthState(): AuthState {
 }
 
 function defaultChallengeSettings(): ChallengeSettingsSnapshot {
-  return { startDate: "2026-07-13" };
+  return { startDate: "2026-07-13", profileImageDataUrl: null };
 }
 
 function formatDateForFilename(date: Date): string {
@@ -124,6 +125,11 @@ function validateImportedPayload(value: unknown): ParseImportResult {
     return { ok: false, error: "Importfilen saknar giltiga challengeSettings." };
   }
 
+  const rawProfileImage = "profileImageDataUrl" in challengeSettings ? challengeSettings.profileImageDataUrl : null;
+  if (!(typeof rawProfileImage === "string" || rawProfileImage === null)) {
+    return { ok: false, error: "Importfilen saknar giltigt profileImageDataUrl i challengeSettings." };
+  }
+
   if (!isObject(userSettings) || typeof userSettings.isAuthenticated !== "boolean" || typeof userSettings.rememberMe !== "boolean") {
     return { ok: false, error: "Importfilen saknar giltiga userSettings." };
   }
@@ -134,6 +140,7 @@ function validateImportedPayload(value: unknown): ParseImportResult {
     checkIns: checkIns as DailyCheckIn[],
     challengeSettings: {
       startDate: challengeSettings.startDate,
+      profileImageDataUrl: rawProfileImage,
     },
     userSettings: {
       isAuthenticated: userSettings.isAuthenticated,

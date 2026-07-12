@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { getChallengeDisplayText, getChallengeProgress } from "../utils/challenge";
 import { formatLongDate } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
+import {
+  getProfileImageDataUrl,
+  profileImageChangedEvent,
+} from "../services/challengeSettingsService";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -14,6 +19,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const challengeProgress = getChallengeProgress();
+  const [profileImageDataUrl, setProfileImageDataUrl] = useState<string | null>(() =>
+    getProfileImageDataUrl(),
+  );
 
   const progressLabel = `${challengeProgress.percentage}% complete`;
 
@@ -21,6 +29,17 @@ export function AppLayout() {
     logout();
     navigate("/login", { replace: true });
   }
+
+  useEffect(() => {
+    function handleProfileImageChanged(): void {
+      setProfileImageDataUrl(getProfileImageDataUrl());
+    }
+
+    window.addEventListener(profileImageChangedEvent, handleProfileImageChanged);
+    return () => {
+      window.removeEventListener(profileImageChangedEvent, handleProfileImageChanged);
+    };
+  }, []);
 
   return (
     <div className="app-shell">
@@ -33,6 +52,20 @@ export function AppLayout() {
             <h1 className="brand-title">LifeOS</h1>
             <p className="brand-subtitle">Ebba&apos;s Challenge</p>
           </div>
+        </div>
+
+        <div className="sidebar-profile-block" aria-label="Profilbild">
+          {profileImageDataUrl ? (
+            <img
+              src={profileImageDataUrl}
+              alt="Profilbild"
+              className="sidebar-profile-image"
+            />
+          ) : (
+            <div className="sidebar-profile-placeholder" aria-hidden="true">
+              👤
+            </div>
+          )}
         </div>
 
         <nav className="main-nav">

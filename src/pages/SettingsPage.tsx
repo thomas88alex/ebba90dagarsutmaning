@@ -2,7 +2,12 @@ import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { challengeConfig } from "../config/challengeConfig";
-import { getChallengeStartDate, setChallengeStartDate } from "../services/challengeSettingsService";
+import {
+  getChallengeStartDate,
+  getProfileImageDataUrl,
+  setChallengeStartDate,
+  setProfileImageDataUrl as saveProfileImageDataUrl,
+} from "../services/challengeSettingsService";
 import {
   buildExportFilename,
   buildPreImportBackupFilename,
@@ -27,10 +32,31 @@ function downloadJsonFile(content: unknown, fileName: string): void {
   URL.revokeObjectURL(objectUrl);
 }
 
+const maxProfileImageSizeBytes = 2 * 1024 * 1024;
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Ogiltig bilddata"));
+    };
+    reader.onerror = () => reject(new Error("Kunde inte läsa bildfilen"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function SettingsPage() {
   const navigate = useNavigate();
   const currentStartDate = useMemo(() => getChallengeStartDate(), []);
+  const currentProfileImage = useMemo(() => getProfileImageDataUrl(), []);
   const [startDate, setStartDate] = useState(currentStartDate);
+  const [profileImageDataUrl, setProfileImageDataUrl] = useState<string | null>(currentProfileImage);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [backupSuccess, setBackupSuccess] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
@@ -43,6 +69,7 @@ export function SettingsPage() {
   const [importError, setImportError] = useState<string | null>(null);
   const [backupReminder, setBackupReminder] = useState(() => getWeeklyBackupReminder());
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const profileInputRef = useRef<HTMLInputElement | null>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,6 +165,46 @@ export function SettingsPage() {
     setImportError(null);
   }
 
+  async function handleProfileImageChange(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    setProfileMessage(null);
+    setProfileError(null);
+
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      if (!file.type.startsWith("image/")) {
+        setProfileError("Välj en giltig bildfil.");
+        return;
+      }
+
+      if (file.size > maxProfileImageSizeBytes) {
+        setProfileError("Bilden är för stor. Maxstorlek är 2 MB.");
+        return;
+      }
+
+      const nextImageDataUrl = await readFileAsDataUrl(file);
+      saveProfileImageDataUrl(nextImageDataUrl);
+      setProfileImageDataUrl(nextImageDataUrl);
+      setProfileMessage("Profilbild sparad.");
+    } catch {
+      setProfileError("Kunde inte spara profilbilden. Försök igen.");
+    } finally {
+      if (profileInputRef.current) {
+        profileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function handleRemoveProfileImage(): void {
+    saveProfileImageDataUrl(null);
+    setProfileImageDataUrl(null);
+    setProfileMessage("Profilbild borttagen.");
+    setProfileError(null);
+  }
+
   const importSummary = pendingImport?.summary;
 
   return (
@@ -168,6 +235,43 @@ export function SettingsPage() {
           <button type="submit" className="primary-button">Spara inställningar</button>
         </div>
       </form>
+
+      <section className="card settings-profile-panel" aria-label="Profilbild">
+        <p className="eyebrow">Profil</p>
+        <h3>Profilbild i sidopanelen</h3>
+        <p className="checkin-hint">Ladda upp en bild som visas mellan titel och meny i vänsterpanelen.</p>
+
+        <div className="settings-profile-preview-wrap">
+          {profileImageDataUrl ? (
+            <img src={profileImageDataUrl} alt="Nuvarande profilbild" className="settings-profile-preview" />
+          ) : (
+            <div className="settings-profile-preview-placeholder" aria-hidden="true">👤</div>
+          )}
+        </div>
+
+        <div className="settings-backup-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => profileInputRef.current?.click()}
+          >
+            Ladda upp profilbild
+          </button>
+          <button type="button" className="secondary-button" onClick={handleRemoveProfileImage}>
+            Ta bort bild
+          </button>
+          <input
+            ref={profileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleProfileImageChange}
+            hidden
+          />
+        </div>
+
+        {profileMessage ? <p className="form-success">{profileMessage}</p> : null}
+        {profileError ? <p className="form-error">{profileError}</p> : null}
+      </section>
 
       <section className="card settings-backup-panel" aria-label="Backup och återställning">
         <p className="eyebrow">Backup & restore</p>
