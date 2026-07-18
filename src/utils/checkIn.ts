@@ -57,29 +57,38 @@ export function getTrainingIcon(activityType: string | undefined): string {
 }
 
 export const breakfastOptions = [
-  "Blueprint-frukost",
-  "Protein havregrynsgröt",
-  "Grekisk yoghurt bowl",
-  "Ägg med avokado",
-  "Smoothie",
+  "Proteinpannkakor med Blåbär & Mörk Choklad",
+  "Krämig Scrambled Eggs med riskakor, gurka & Banan",
+  "Choklad Overnight Oats",
+  "Krämig Kyckling Pasta med Ost sås och spenat ",
+  "Proteinlasagne med sötpotatis",
+  "Lax med ris & Citronsås",
+  "Hög Protein Frukost Wrap",
+  "Hög Protein Taco Wrap",
   "Annat",
 ] as const;
 
 export const lunchOptions = [
-  "Kyckling burrito bowl",
-  "Thailändsk köttbowl",
-  "Laxsallad",
-  "Fiskcurry",
-  "Kalkonchili",
+  "Proteinpannkakor med Blåbär & Mörk Choklad",
+  "Krämig Scrambled Eggs med riskakor, gurka & Banan",
+  "Choklad Overnight Oats",
+  "Krämig Kyckling Pasta med Ost sås och spenat ",
+  "Proteinlasagne med sötpotatis",
+  "Lax med ris & Citronsås",
+  "Hög Protein Frukost Wrap",
+  "Hög Protein Taco Wrap",
   "Annat",
 ] as const;
 
 export const dinnerOptions = [
-  "Fiskcurry med spenat",
-  "Kycklingcurry",
-  "Biffwok",
-  "Laxbowl",
-  "Kalkonköttbullar",
+  "Proteinpannkakor med Blåbär & Mörk Choklad",
+  "Krämig Scrambled Eggs med riskakor, gurka & Banan",
+  "Choklad Overnight Oats",
+  "Krämig Kyckling Pasta med Ost sås och spenat ",
+  "Proteinlasagne med sötpotatis",
+  "Lax med ris & Citronsås",
+  "Hög Protein Frukost Wrap",
+  "Hög Protein Taco Wrap",
   "Annat",
 ] as const;
 
