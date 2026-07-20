@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { getChallengeDisplayText, getChallengeProgress } from "../utils/challenge";
 import { formatLongDate } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
@@ -16,7 +16,6 @@ const navItems = [
 ];
 
 export function AppLayout() {
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const challengeProgress = getChallengeProgress();
   const [profileImageDataUrl, setProfileImageDataUrl] = useState<string | null>(() =>
@@ -27,7 +26,7 @@ export function AppLayout() {
 
   function handleLogout() {
     logout();
-    navigate("/login", { replace: true });
+    window.location.hash = "#/login";
   }
 
   useEffect(() => {
