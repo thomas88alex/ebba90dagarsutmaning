@@ -50,12 +50,53 @@ export type ParseImportResult =
     error: string;
   };
 
+const mojibakeMarkerPattern = /(Ã.|Â|â.|�)/g;
+
 function isIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function countMojibakeMarkers(value: string): number {
+  return value.match(mojibakeMarkerPattern)?.length ?? 0;
+}
+
+function repairLatin1DecodedUtf8(value: string): string {
+  const bytes = Uint8Array.from(value, (char) => char.charCodeAt(0) & 0xff);
+  return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+}
+
+function normalizeAndRepairString(value: string): string {
+  const normalized = value.normalize("NFC");
+  if (countMojibakeMarkers(normalized) === 0) {
+    return normalized;
+  }
+
+  const repaired = repairLatin1DecodedUtf8(normalized).normalize("NFC");
+  return countMojibakeMarkers(repaired) < countMojibakeMarkers(normalized) ? repaired : normalized;
+}
+
+function normalizeImportedValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    return normalizeAndRepairString(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeImportedValue(item));
+  }
+
+  if (isObject(value)) {
+    const normalizedEntries = Object.entries(value).map(([key, nestedValue]) => [
+      key,
+      normalizeImportedValue(nestedValue),
+    ] as const);
+    return Object.fromEntries(normalizedEntries);
+  }
+
+  return value;
 }
 
 function defaultAuthState(): AuthState {
@@ -188,7 +229,8 @@ export function restoreFromBackup(payload: ChallengeBackupPayload): void {
 
 export function parseImportPayload(fileText: string): ParseImportResult {
   try {
-    const parsed = JSON.parse(fileText) as unknown;
+    // Repair known encoding artifacts and normalize Unicode before validation.
+    const parsed = normalizeImportedValue(JSON.parse(fileText) as unknown);
     return validateImportedPayload(parsed);
   } catch {
     return { ok: false, error: "Kunde inte läsa importfilen. Kontrollera att det är en JSON-fil." };

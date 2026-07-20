@@ -226,6 +226,39 @@ function isReflectionComplete(value: string): boolean {
   return hasText(value);
 }
 
+function normalizeOptionValue(value: string): string {
+  return value.normalize("NFC").trim().toLocaleLowerCase("sv-SE");
+}
+
+function resolveOptionValue<T extends string>(
+  value: string,
+  options: readonly T[],
+): T | undefined {
+  const normalizedValue = normalizeOptionValue(value);
+  return options.find((option) => normalizeOptionValue(option) === normalizedValue);
+}
+
+function resolveMealSelection<T extends string>(
+  recipeName: string | undefined,
+  customMeal: string | undefined,
+  options: readonly T[],
+): { value: T | "Annat" | ""; other: string } {
+  if (customMeal?.trim()) {
+    return { value: "Annat", other: customMeal };
+  }
+
+  if (!recipeName) {
+    return { value: "", other: "" };
+  }
+
+  const matched = resolveOptionValue(recipeName, options);
+  if (matched) {
+    return { value: matched, other: "" };
+  }
+
+  return { value: "Annat", other: recipeName };
+}
+
 export function buildDefaultCheckIn(date: string): CheckInFormValues {
   return {
     date,
@@ -270,7 +303,28 @@ export function buildDefaultCheckIn(date: string): CheckInFormValues {
 
 export function formValuesFromCheckIn(checkIn: DailyCheckIn): CheckInFormValues {
   const trainingType = checkIn.training.activityType ?? "";
-  const trainingIsOther = trainingType.length > 0 && !trainingOptions.includes(trainingType as (typeof trainingOptions)[number]);
+  const resolvedTraining = trainingType.length > 0
+    ? resolveOptionValue(trainingType, trainingOptions)
+    : undefined;
+  const trainingIsOther = trainingType.length > 0 && !resolvedTraining;
+  const breakfastMeal = checkIn.nutrition.meals.find((meal) => meal.mealNumber === 1);
+  const lunchMeal = checkIn.nutrition.meals.find((meal) => meal.mealNumber === 2);
+  const dinnerMeal = checkIn.nutrition.meals.find((meal) => meal.mealNumber === 3);
+  const breakfastSelection = resolveMealSelection(
+    breakfastMeal?.recipeName,
+    breakfastMeal?.customMeal,
+    breakfastOptions,
+  );
+  const lunchSelection = resolveMealSelection(
+    lunchMeal?.recipeName,
+    lunchMeal?.customMeal,
+    lunchOptions,
+  );
+  const dinnerSelection = resolveMealSelection(
+    dinnerMeal?.recipeName,
+    dinnerMeal?.customMeal,
+    dinnerOptions,
+  );
   const legacyReflection = checkIn.reflection as DailyCheckIn["reflection"] & {
     difficult?: string;
     improveTomorrow?: string;
@@ -283,7 +337,7 @@ export function formValuesFromCheckIn(checkIn: DailyCheckIn): CheckInFormValues 
 
   return {
     date: checkIn.date,
-    trainingType: trainingIsOther ? "Annat" : trainingType || "",
+    trainingType: trainingIsOther ? "Annat" : resolvedTraining ?? "",
     trainingOther: trainingIsOther ? trainingType : "",
     trainingDuration: checkIn.training.durationMinutes ? String(checkIn.training.durationMinutes) : "",
     trainingHeartRate: checkIn.training.averageHeartRate ? String(checkIn.training.averageHeartRate) : "",
@@ -294,15 +348,15 @@ export function formValuesFromCheckIn(checkIn: DailyCheckIn): CheckInFormValues 
           ? "Nej"
           : "",
     trainingComment: checkIn.training.notes ?? checkIn.comments?.training ?? "",
-    breakfast: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 1)?.customMeal ? "Annat" : checkIn.nutrition.meals.find((meal) => meal.mealNumber === 1)?.recipeName ?? "",
-    breakfastOther: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 1)?.customMeal ?? "",
-    breakfastComment: checkIn.comments?.meal1 ?? checkIn.nutrition.meals.find((meal) => meal.mealNumber === 1)?.comment ?? "",
-    lunch: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 2)?.customMeal ? "Annat" : checkIn.nutrition.meals.find((meal) => meal.mealNumber === 2)?.recipeName ?? "",
-    lunchOther: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 2)?.customMeal ?? "",
-    lunchComment: checkIn.comments?.meal2 ?? checkIn.nutrition.meals.find((meal) => meal.mealNumber === 2)?.comment ?? "",
-    dinner: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 3)?.customMeal ? "Annat" : checkIn.nutrition.meals.find((meal) => meal.mealNumber === 3)?.recipeName ?? "",
-    dinnerOther: checkIn.nutrition.meals.find((meal) => meal.mealNumber === 3)?.customMeal ?? "",
-    dinnerComment: checkIn.comments?.meal3 ?? checkIn.nutrition.meals.find((meal) => meal.mealNumber === 3)?.comment ?? "",
+    breakfast: breakfastSelection.value,
+    breakfastOther: breakfastSelection.other,
+    breakfastComment: checkIn.comments?.meal1 ?? breakfastMeal?.comment ?? "",
+    lunch: lunchSelection.value,
+    lunchOther: lunchSelection.other,
+    lunchComment: checkIn.comments?.meal2 ?? lunchMeal?.comment ?? "",
+    dinner: dinnerSelection.value,
+    dinnerOther: dinnerSelection.other,
+    dinnerComment: checkIn.comments?.meal3 ?? dinnerMeal?.comment ?? "",
     nutritionPlanFollowed:
       checkIn.nutrition.followedMealPlan === true
         ? "Ja"
